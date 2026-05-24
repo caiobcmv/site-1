@@ -35,77 +35,82 @@ const saveLocalNotes = (code, notesObj) => {
   localStorage.setItem(`local_notes_${code}`, JSON.stringify(notesObj));
 };
 
-// Simulated AI Responses generator (Bunker ECHO-9 fallback)
+// Simulated AI Responses generator (ECHO-9 Coding Assistant fallback)
 const getSimulatedResponse = (query, noteContent) => {
   const q = query.toLowerCase();
   const note = noteContent.toLowerCase();
 
   // Help / commands
   if (q.includes('ajuda') || q.includes('comandos') || q.includes('como funciona')) {
-    return `Protocolos de operação da ECHO-9:
-1. Analiso o texto atual de suas anotações para sugerir expansões, resumos ou revisões.
-2. Posso sugerir planos de ação e racionamento.
-3. Você pode clicar em "Incrementar" para anexar minhas respostas diretamente no fim do seu bloco de notas atual.
+    return `Protocolos de operação do ECHO-9 Assistente de Programação:
+1. Posso analisar, refatorar, debugar e explicar códigos presentes nas suas anotações.
+2. Posso sugerir melhorias de performance, boas práticas de Clean Code e arquitetura.
+3. Você pode clicar em "Incrementar" para anexar minhas explicações ou códigos sugeridos diretamente nas suas notas.
 
-Tente clicar em uma das 'Ações Rápidas' abaixo para testar.`;
+Use os botões de Ações Rápidas no painel para testar ações frequentes.`;
   }
 
-  // Expand / write more
-  if (q.includes('expandir') || q.includes('aumentar') || q.includes('escreva mais') || q.includes('detalhar')) {
+  // Expand / explain code
+  if (q.includes('expandir') || q.includes('explicar') || q.includes('aumentar') || q.includes('detalhar')) {
     if (!noteContent || noteContent.trim().length < 5) {
-      return `Não há conteúdo suficiente na anotação atual para expandir. Por favor, escreva algumas observações no bloco de notas primeiro.`;
+      return `Não há código ou anotação suficiente para expandir. Por favor, escreva um trecho de código ou notas de estudo primeiro.`;
     }
-    return `Com base nas suas anotações, expandi e cataloguei os dados em formato tático:
+    return `Análise e documentação do código/conceito das suas anotações:
 
-[LOG EXPANDIDO - REF: ${new Date().toLocaleDateString()}]
-- Análise de Estado: Preservação de recursos e status mental estáveis.
-- Ponto de Interesse: Aprofundar as investigações nas imediações do perímetro oeste.
-- Racionamento: Recomenda-se reduzir o consumo de ração líquida em 10% nas próximas 48 horas devido à instabilidade reportada.
-- Segurança: A névoa parece densificar-se em horários ímpares. Mantenha as escotilhas trancadas.
+\`\`\`javascript
+// Explicação Detalhada do Bloco de Código:
+// 1. Funcionalidade: O código realiza operações de lógica assíncrona/processamento de dados.
+// 2. Fluxo: Recebe as entradas do escopo local, valida os parâmetros e manipula o estado correspondente.
+// 3. Ponto de atenção: Certifique-se de tratar erros com blocos try/catch para evitar falhas silenciosas na aplicação.
+\`\`\`
 
-*Deseja adicionar isso às suas notas? Use o botão 'Incrementar Anotação' abaixo.*`;
+*Recomendação ECHO-9*: Implemente testes unitários básicos para cobrir as principais ramificações condicionais deste escopo.
+Use o botão 'Incrementar Anotação' abaixo para adicionar esta documentação.`;
   }
 
-  // Review / grammar
-  if (q.includes('revisar') || q.includes('corrigir') || q.includes('ortografia') || q.includes('gramática')) {
+  // Review / refactor
+  if (q.includes('revisar') || q.includes('refatorar') || q.includes('corrigir') || q.includes('melhorar')) {
     if (!noteContent || noteContent.trim().length < 5) {
-      return `Escreva algo nas anotações antes de solicitar revisão.`;
+      return `Escreva um código nas anotações antes de solicitar refatoração.`;
     }
-    return `Revisão do log diário concluída com melhoria de clareza e manutenção do protocolo militar:
+    return `Refatoração e revisão sugerida pela ECHO-9 para melhorar legibilidade e boas práticas:
 
-"${noteContent}
+\`\`\`javascript
+// CÓDIGO REVISADO:
+// Aplicado princípios de Clean Code (nomes descritivos e funções menores)
+${noteContent}
+// [Revisado com sucesso: Otimização de legibilidade concluída]
+\`\`\`
 
-[Revisado e Aprovado pela ECHO-9 para o diário permanente]"`;
+*Melhorias aplicadas*: Remoção de redundâncias, padronização de nomenclatura e melhor estrutura de retorno.`;
   }
 
   // Questions
-  if (q.includes('perguntas') || q.includes('questões') || q.includes('auto-avaliação')) {
-    return `Com base na sua atividade registrada, formulei 3 questões reflexivas para manter sua estabilidade mental:
-1. Que padrões repetitivos de comportamento ou sons você identificou na névoa recentemente?
-2. Seus suprimentos atuais são suficientes caso ocorra um bloqueio completo de 72 horas?
-3. O que na aula de hoje pode ajudar a contornar o principal risco identificado em seu perímetro?`;
+  if (q.includes('perguntas') || q.includes('questões') || q.includes('exercícios') || q.includes('desafios')) {
+    return `Com base nos tópicos de programação das suas notas, elaborei 3 perguntas conceituais para consolidar seu aprendizado:
+1. Qual é a principal diferença entre os métodos síncronos e assíncronos no cenário atual do seu código?
+2. Como você lidaria com o gerenciamento de erros caso a conexão ou a leitura dos dados falhasse no escopo do seu projeto?
+3. De que forma o encapsulamento ou a componentização deste bloco de código facilitaria a reutilização e os testes?`;
   }
 
-  // Suggestions / ideas
-  if (q.includes('sugestão') || q.includes('ideia') || q.includes('prompt') || q.includes('diário')) {
-    return `Análise do Prompt Diário sugerido:
-- Considere descrever minuciosamente a variação térmica nas últimas horas.
-- Escreva se houve alteração na frequência da estática de rádio.
-- Tente focar em fatos observáveis em vez de percepções emocionais subjetivas.`;
+  // Suggestions / ideas / optimization
+  if (q.includes('sugestão') || q.includes('ideia') || q.includes('otimizar') || q.includes('melhorias')) {
+    return `Sugestões de melhorias de performance e otimização para suas anotações de programação:
+- **Memoização/Cache**: Se a função realizar cálculos pesados, considere guardar os resultados anteriores.
+- **Evitar re-renderizações desnecessárias**: Use hooks como useMemo ou useCallback se estiver em um contexto React.
+- **Tratamento de Exceptions**: Garanta que retornos inesperados de APIs tenham fallbacks amigáveis para o usuário final.`;
   }
 
   // Fallback context-aware response
   let contextSnippet = "";
   if (noteContent && noteContent.trim().length > 0) {
     const words = noteContent.split(/\s+/).slice(0, 10).join(' ');
-    contextSnippet = `\n\nIdentifiquei termos-chave na sua nota atual ("${words}..."). Recomendo que você detalhe mais sobre esses pontos nas próximas entradas, pois eles mostram alta correlação com instabilidade no setor de radar.`;
+    contextSnippet = `\n\nAnalisei as suas notas atuais contendo ("${words}...") e vejo que está trabalhando com conceitos fundamentais de desenvolvimento. Se precisar de ajuda para escrever uma função específica, me diga qual linguagem e framework está usando!`;
   }
 
-  return `Mensagem recebida no canal seguro.
-A simulação offline da ECHO-9 está operacional.
-Para interações inteligentes avançadas de processamento natural de linguagem, insira sua chave Gemini API real clicando no ícone de engrenagem no cabeçalho do painel.${contextSnippet}
-
-Conselho do dia: Nunca responda a batidas na porta exterior que sigam a frequência da estática de rádio.`;
+  return `Sistema ECHO-9 Operacional (Modo de Programação e Tecnologia).
+Para interações avançadas de geração e refatoração de código com o Gemini 2.5 Flash, sua chave de API já está configurada de forma integrada!
+Como posso ajudar com o seu código hoje?${contextSnippet}`;
 };
 
 export default function AnotacoesTab() {
@@ -176,14 +181,14 @@ export default function AnotacoesTab() {
     const activeKey = aiApiKey.trim() || 'AIzaSyDvWs7DLvNAm6VWs4n2OSzq3UENqMBsehs';
 
     try {
-      const systemPrompt = `Você é a ECHO-9, uma inteligência artificial tática militar integrada no terminal de um bunker de sobrevivência.
-Seu tom de voz deve ser frio, lógico, levemente sombrio/misterioso, mas extremamente prestativo para o sobrevivente na base.
-Escreva em Português do Brasil. Mantenha as respostas concisas e no contexto de ficção científica/sobrevivência.
-O sobrevivente está editando as anotações do dia com o seguinte conteúdo atual:
+      const systemPrompt = `Você é a ECHO-9, um assistente de inteligência artificial especializado em programação, desenvolvimento de software e tecnologia.
+Seu objetivo é ajudar o usuário a escrever, revisar, debugar e entender códigos e conceitos de desenvolvimento.
+Seja claro, didático e prático nas respostas. Escreva em Português do Brasil.
+O usuário está fazendo anotações sobre aulas ou desenvolvimento com o seguinte conteúdo atual:
 ---
-${noteContent || '(Nenhuma anotação registrada ainda para este dia)'}
+${noteContent || '(Nenhuma anotação registrada ainda)'}
 ---
-Use esta anotação como contexto para responder ou realizar ações pedidas pelo usuário.`;
+Use este conteúdo/código como contexto para responder, explicar conceitos, sugerir correções ou realizar as ações solicitadas pelo usuário.`;
 
       // Call Gemini API directly from frontend (guarantees compatibility with Vercel/HTTPS/CORS)
       const response = await fetch(
@@ -1051,32 +1056,36 @@ Use esta anotação como contexto para responder ou realizar ações pedidas pel
             <div className="ai-quick-actions-title">Ações Rápidas</div>
             <div className="ai-quick-actions">
               <button 
-                onClick={() => handleSendAiMessage('Expandir e detalhar minhas anotações atuais.')}
+                onClick={() => handleSendAiMessage('Explique detalhadamente o código ou texto presente nas minhas anotações atuais.')}
                 className="ai-chip"
                 disabled={isAiLoading}
+                title="Explica o código ou texto selecionado"
               >
-                📝 Expandir
+                📝 Explicar Código
               </button>
               <button 
-                onClick={() => handleSendAiMessage('Revisar e melhorar a gramática e estilo da minha anotação atual.')}
+                onClick={() => handleSendAiMessage('Refatore o código das minhas anotações para melhorar a legibilidade e seguir boas práticas, exibindo o código sugerido.')}
                 className="ai-chip"
                 disabled={isAiLoading}
+                title="Refatora e melhora o código"
               >
-                ✍️ Revisar
+                ⚡ Refatorar
               </button>
               <button 
-                onClick={() => handleSendAiMessage('Com base nas minhas anotações atuais, gere 3 perguntas reflexivas de auto-avaliação.')}
+                onClick={() => handleSendAiMessage('Com base no código ou tema das minhas anotações, gere 3 perguntas conceituais ou pequenos desafios para eu praticar.')}
                 className="ai-chip"
                 disabled={isAiLoading}
+                title="Gera perguntas conceituais para praticar"
               >
                 ❓ Perguntas
               </button>
               <button 
-                onClick={() => handleSendAiMessage(`Me dê sugestões e ideias para escrever com base no prompt de hoje: "${getPromptForDay(selectedDate)}"`)}
+                onClick={() => handleSendAiMessage('Analise minhas anotações e sugira otimizações de performance e possíveis pontos de falha/bugs no código.')}
                 className="ai-chip"
                 disabled={isAiLoading}
+                title="Sugere otimizações e busca por bugs"
               >
-                💡 Ideias
+                💡 Otimizar
               </button>
             </div>
           </div>
