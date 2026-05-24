@@ -1566,6 +1566,7 @@ button {
 @media (max-width: 768px) {
   .dashboard-root {
     flex-direction: column;
+    height: 100vh;
   }
   
   .sidebar {
@@ -1576,7 +1577,7 @@ button {
   }
   
   .sidebar-header {
-    padding: 1.25rem;
+    padding: 1rem 1.25rem;
   }
   
   .sidebar-menu {
@@ -1584,6 +1585,11 @@ button {
     padding: 0.5rem 1rem;
     overflow-x: auto;
     gap: 8px;
+    scrollbar-width: none;
+  }
+  
+  .sidebar-menu::-webkit-scrollbar {
+    display: none;
   }
   
   .menu-item {
@@ -1591,6 +1597,7 @@ button {
     white-space: nowrap;
     border-left: none !important;
     border-bottom: 2px solid transparent;
+    font-size: 0.85rem;
   }
   
   .menu-item.active {
@@ -1603,12 +1610,72 @@ button {
     display: none;
   }
   
+  .main-content {
+    flex-grow: 1;
+    height: 0;
+  }
+  
   .content-header {
     padding: 1rem 1.25rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .header-date {
+    align-self: flex-start;
+    font-size: 0.75rem;
   }
   
   .tab-container {
-    padding: 1.25rem;
+    padding: 1rem;
+  }
+  
+  .notes-container {
+    grid-template-columns: 1fr !important;
+    height: auto !important;
+    overflow-y: visible;
+  }
+  
+  .notes-sidebar-card {
+    height: auto !important;
+  }
+  
+  .notes-history-list {
+    max-height: 200px;
+  }
+  
+  .editor-card {
+    min-height: 400px;
+  }
+  
+  /* Hide volume slider on mobile persistent bar */
+  .mini-player-bar {
+    padding: 0 1rem;
+  }
+  
+  .mini-player-bar > div:last-child {
+    display: none !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .intro-content {
+    padding: 2rem 1rem;
+    margin: 1rem;
+  }
+  
+  .intro-title {
+    font-size: 1.6rem;
+  }
+  
+  .btn-start {
+    padding: 0.8rem 1.5rem;
+    font-size: 0.9rem;
+  }
+  
+  .visualizer-canvas-container {
+    height: 100px;
   }
 }
 
