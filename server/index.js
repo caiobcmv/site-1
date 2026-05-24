@@ -156,6 +156,65 @@ app.post('/api/notes', async (req, res) => {
   }
 });
 
+// 4. AI Chat endpoint (ECHO-9)
+app.post('/api/ai/chat', async (req, res) => {
+  const { message, contextNote, apiKey } = req.body;
+  const geminiKey = apiKey || process.env.GEMINI_API_KEY;
+
+  if (!message) {
+    return res.status(400).json({ error: 'Mensagem ausente.' });
+  }
+
+  if (!geminiKey) {
+    return res.status(400).json({ 
+      error: 'API Key do Gemini não configurada. Configure no painel de IA ou no servidor.' 
+    });
+  }
+
+  try {
+    const systemPrompt = `Você é a ECHO-9, uma inteligência artificial tática militar integrada no terminal de um bunker de sobrevivência.
+Seu tom de voz deve ser frio, lógico, levemente sombrio/misterioso, mas extremamente prestativo para o sobrevivente na base.
+Escreva em Português do Brasil. Mantenha as respostas concisas e no contexto de ficção científica/sobrevivência.
+O sobrevivente está editando as anotações do dia com o seguinte conteúdo atual:
+---
+${contextNote || '(Nenhuma anotação registrada ainda para este dia)'}
+---
+Use esta anotação como contexto para responder ou realizar ações pedidas pelo usuário.`;
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: 'user',
+              parts: [
+                { text: systemPrompt },
+                { text: message }
+              ]
+            }
+          ]
+        })
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Erro na API do Gemini:', errorText);
+      return res.status(502).json({ error: 'Erro de comunicação com a API do Gemini.', details: errorText });
+    }
+
+    const data = await response.json();
+    const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Nenhuma resposta gerada.';
+    return res.json({ response: replyText });
+  } catch (err) {
+    console.error('Erro no processamento da IA:', err);
+    return res.status(500).json({ error: 'Erro interno ao processar a requisição de IA.' });
+  }
+});
+
 // Start Server after DB init
 initDb().then(() => {
   app.listen(PORT, () => {

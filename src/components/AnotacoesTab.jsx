@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Calendar, Save, FileText, Sparkles, ChevronLeft, ChevronRight, Lock, Unlock, Eye, EyeOff, ShieldAlert, LogOut, Loader2 } from 'lucide-react';
+import { Calendar, Save, FileText, Sparkles, ChevronLeft, ChevronRight, Lock, Unlock, Eye, EyeOff, ShieldAlert, LogOut, Loader2, Send, Settings, Trash2, Copy, Plus, Bot, X } from 'lucide-react';
 
 const DAILY_PROMPTS = [
   "O que você observou de diferente na névoa hoje?",
@@ -35,6 +35,79 @@ const saveLocalNotes = (code, notesObj) => {
   localStorage.setItem(`local_notes_${code}`, JSON.stringify(notesObj));
 };
 
+// Simulated AI Responses generator (Bunker ECHO-9 fallback)
+const getSimulatedResponse = (query, noteContent) => {
+  const q = query.toLowerCase();
+  const note = noteContent.toLowerCase();
+
+  // Help / commands
+  if (q.includes('ajuda') || q.includes('comandos') || q.includes('como funciona')) {
+    return `Protocolos de operação da ECHO-9:
+1. Analiso o texto atual de suas anotações para sugerir expansões, resumos ou revisões.
+2. Posso sugerir planos de ação e racionamento.
+3. Você pode clicar em "Incrementar" para anexar minhas respostas diretamente no fim do seu bloco de notas atual.
+
+Tente clicar em uma das 'Ações Rápidas' abaixo para testar.`;
+  }
+
+  // Expand / write more
+  if (q.includes('expandir') || q.includes('aumentar') || q.includes('escreva mais') || q.includes('detalhar')) {
+    if (!noteContent || noteContent.trim().length < 5) {
+      return `Não há conteúdo suficiente na anotação atual para expandir. Por favor, escreva algumas observações no bloco de notas primeiro.`;
+    }
+    return `Com base nas suas anotações, expandi e cataloguei os dados em formato tático:
+
+[LOG EXPANDIDO - REF: ${new Date().toLocaleDateString()}]
+- Análise de Estado: Preservação de recursos e status mental estáveis.
+- Ponto de Interesse: Aprofundar as investigações nas imediações do perímetro oeste.
+- Racionamento: Recomenda-se reduzir o consumo de ração líquida em 10% nas próximas 48 horas devido à instabilidade reportada.
+- Segurança: A névoa parece densificar-se em horários ímpares. Mantenha as escotilhas trancadas.
+
+*Deseja adicionar isso às suas notas? Use o botão 'Incrementar Anotação' abaixo.*`;
+  }
+
+  // Review / grammar
+  if (q.includes('revisar') || q.includes('corrigir') || q.includes('ortografia') || q.includes('gramática')) {
+    if (!noteContent || noteContent.trim().length < 5) {
+      return `Escreva algo nas anotações antes de solicitar revisão.`;
+    }
+    return `Revisão do log diário concluída com melhoria de clareza e manutenção do protocolo militar:
+
+"${noteContent}
+
+[Revisado e Aprovado pela ECHO-9 para o diário permanente]"`;
+  }
+
+  // Questions
+  if (q.includes('perguntas') || q.includes('questões') || q.includes('auto-avaliação')) {
+    return `Com base na sua atividade registrada, formulei 3 questões reflexivas para manter sua estabilidade mental:
+1. Que padrões repetitivos de comportamento ou sons você identificou na névoa recentemente?
+2. Seus suprimentos atuais são suficientes caso ocorra um bloqueio completo de 72 horas?
+3. O que na aula de hoje pode ajudar a contornar o principal risco identificado em seu perímetro?`;
+  }
+
+  // Suggestions / ideas
+  if (q.includes('sugestão') || q.includes('ideia') || q.includes('prompt') || q.includes('diário')) {
+    return `Análise do Prompt Diário sugerido:
+- Considere descrever minuciosamente a variação térmica nas últimas horas.
+- Escreva se houve alteração na frequência da estática de rádio.
+- Tente focar em fatos observáveis em vez de percepções emocionais subjetivas.`;
+  }
+
+  // Fallback context-aware response
+  let contextSnippet = "";
+  if (noteContent && noteContent.trim().length > 0) {
+    const words = noteContent.split(/\s+/).slice(0, 10).join(' ');
+    contextSnippet = `\n\nIdentifiquei termos-chave na sua nota atual ("${words}..."). Recomendo que você detalhe mais sobre esses pontos nas próximas entradas, pois eles mostram alta correlação com instabilidade no setor de radar.`;
+  }
+
+  return `Mensagem recebida no canal seguro.
+A simulação offline da ECHO-9 está operacional.
+Para interações inteligentes avançadas de processamento natural de linguagem, insira sua chave Gemini API real clicando no ícone de engrenagem no cabeçalho do painel.${contextSnippet}
+
+Conselho do dia: Nunca responda a batidas na porta exterior que sigam a frequência da estática de rádio.`;
+};
+
 export default function AnotacoesTab() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -52,6 +125,116 @@ export default function AnotacoesTab() {
   const [isAuthenticating, setIsAuthenticating] = useState(false);
 
   const timerRef = useRef(null);
+
+  // AI States (ECHO-9)
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiMessages, setAiMessages] = useState([]);
+  const [aiInput, setAiInput] = useState('');
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiApiKey, setAiApiKey] = useState(() => localStorage.getItem('gemini_api_key') || '');
+  const [showAiSettings, setShowAiSettings] = useState(false);
+  const chatEndRef = useRef(null);
+
+  // Auto scroll chat to bottom when new messages arrive
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [aiMessages, aiOpen]);
+
+  const handleSendAiMessage = async (textToSend) => {
+    const text = textToSend || aiInput;
+    if (!text.trim() || isAiLoading) return;
+
+    if (!textToSend) setAiInput('');
+
+    // Append user message
+    const userMsg = { sender: 'user', text: text.trim(), timestamp: new Date() };
+    setAiMessages(prev => [...prev, userMsg]);
+    setIsAiLoading(true);
+
+    try {
+      // Call API
+      const response = await fetch(`${API_URL}/api/ai/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: text.trim(),
+          contextNote: noteContent,
+          apiKey: aiApiKey.trim() || undefined
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const systemMsg = { sender: 'ai', text: data.response, timestamp: new Date() };
+        setAiMessages(prev => [...prev, systemMsg]);
+      } else {
+        const errData = await response.json();
+        // If API Key is not configured, fall back to offline simulation
+        if (!aiApiKey.trim() && (errData.error?.includes('Key') || errData.error?.includes('configurada'))) {
+          const simResponse = getSimulatedResponse(text.trim(), noteContent);
+          const systemMsg = { 
+            sender: 'ai', 
+            text: `[PROTOCOLO DE SIMULAÇÃO ATIVO - SEM CONEXÃO GEMINI]\n\n${simResponse}`, 
+            timestamp: new Date() 
+          };
+          setAiMessages(prev => [...prev, systemMsg]);
+        } else {
+          const systemMsg = { 
+            sender: 'ai', 
+            text: `ERRO DE PROTOCOLO: ${errData.error || 'Falha na comunicação com o servidor ECHO-9.'}`, 
+            timestamp: new Date() 
+          };
+          setAiMessages(prev => [...prev, systemMsg]);
+        }
+      }
+    } catch (err) {
+      console.error('Erro de rede na IA:', err);
+      // Fallback to offline simulation on connection error
+      const simResponse = getSimulatedResponse(text.trim(), noteContent);
+      const systemMsg = { 
+        sender: 'ai', 
+        text: `[EMERGÊNCIA: SISTEMA DA BASE OFFLINE. EXECUTANDO RESPOSTA SIMULADA DE PROTOCOLO]\n\n${simResponse}`, 
+        timestamp: new Date() 
+      };
+      setAiMessages(prev => [...prev, systemMsg]);
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  const handleAppendToNote = (text) => {
+    // Strip the simulator prefix/alert if any
+    const cleanText = text
+      .replace(/\[PROTOCOLO DE SIMULAÇÃO ATIVO - SEM CONEXÃO GEMINI\]\n\n/g, '')
+      .replace(/\[EMERGÊNCIA: SISTEMA DA BASE OFFLINE. EXECUTANDO RESPOSTA SIMULADA DE PROTOCOLO\]\n\n/g, '');
+    
+    setNoteContent(prev => {
+      const spacing = prev.trim() ? '\n\n' : '';
+      const updated = `${prev}${spacing}${cleanText}`;
+      saveNote(selectedKey, updated);
+      return updated;
+    });
+  };
+
+  const handleReplaceNote = (text) => {
+    const cleanText = text
+      .replace(/\[PROTOCOLO DE SIMULAÇÃO ATIVO - SEM CONEXÃO GEMINI\]\n\n/g, '')
+      .replace(/\[EMERGÊNCIA: SISTEMA DA BASE OFFLINE. EXECUTANDO RESPOSTA SIMULADA DE PROTOCOLO\]\n\n/g, '');
+    setNoteContent(cleanText);
+    saveNote(selectedKey, cleanText);
+  };
+
+  const handleSaveApiKey = (key) => {
+    const cleanKey = key.trim();
+    setAiApiKey(cleanKey);
+    if (cleanKey) {
+      localStorage.setItem('gemini_api_key', cleanKey);
+    } else {
+      localStorage.removeItem('gemini_api_key');
+    }
+  };
 
   // Helper to format date as YYYY-MM-DD (local timezone safe)
   const getLocalDateKey = (date) => {
@@ -507,7 +690,7 @@ export default function AnotacoesTab() {
 
   // --- RENDER MAIN DIARY VIEW ---
   return (
-    <div className="notes-container scale-up">
+    <div className={`notes-container scale-up ${aiOpen ? 'ai-open' : ''}`}>
       {/* Calendar Selector Sidebar */}
       <div className="notes-sidebar-card">
         <div className="calendar-header">
@@ -649,6 +832,16 @@ export default function AnotacoesTab() {
             </button>
             
             <button 
+              onClick={() => setAiOpen(!aiOpen)}
+              className={`ai-toggle-btn ${aiOpen ? 'active' : ''}`}
+              style={{ marginRight: '8px' }}
+              title="Abrir Assistente de IA ECHO-9"
+            >
+              <Bot size={12} />
+              <span>{aiOpen ? 'Fechar IA' : 'ECHO-9 IA'}</span>
+            </button>
+
+            <button 
               onClick={handleLogout}
               style={{
                 display: 'flex',
@@ -708,6 +901,179 @@ export default function AnotacoesTab() {
           </div>
         </div>
       </div>
+
+      {/* AI Assistant Panel */}
+      {aiOpen && (
+        <div className="ai-panel">
+          <div className="ai-header">
+            <div className="ai-header-title">
+              <Bot size={16} />
+              <h3>ECHO-9 Tactical AI</h3>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div className="ai-status-indicator">
+                <span className={`ai-status-dot ${aiApiKey.trim() ? 'active' : 'offline'}`} />
+                <span>{aiApiKey.trim() ? 'ONLINE' : 'SIMULATION'}</span>
+              </div>
+              <button 
+                onClick={() => setShowAiSettings(!showAiSettings)}
+                className="ai-settings-toggle"
+                title="Configurações da API Key"
+              >
+                <Settings size={14} />
+              </button>
+              <button 
+                onClick={() => setAiOpen(false)}
+                className="ai-settings-toggle"
+                title="Fechar Painel"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          </div>
+
+          {/* AI settings drawer */}
+          {showAiSettings && (
+            <div className="ai-settings-panel">
+              <h4>Configurações do Terminal</h4>
+              <div className="ai-key-input-wrapper">
+                <span className="ai-key-label">Chave de API do Gemini:</span>
+                <input 
+                  type="password" 
+                  placeholder="Cole sua API Key do Gemini aqui..."
+                  value={aiApiKey}
+                  onChange={(e) => handleSaveApiKey(e.target.value)}
+                  className="ai-key-input"
+                />
+                <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>
+                  A chave é salva localmente no seu navegador e não é compartilhada. Deixe em branco para usar o modo de simulação offline.
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Chat Messages */}
+          <div className="ai-chat-messages">
+            {aiMessages.length === 0 ? (
+              <div className="ai-empty-chat">
+                <Bot size={32} style={{ color: 'var(--text-muted)' }} />
+                <span className="ai-empty-title">ECHO-9 Operacional</span>
+                <p className="ai-empty-desc">
+                  Eu sou o sistema tático ECHO-9. Posso analisar suas anotações, tirar dúvidas, revisar sua escrita e sugerir conteúdo. Use as ações rápidas abaixo ou me envie uma mensagem.
+                </p>
+              </div>
+            ) : (
+              aiMessages.map((msg, index) => (
+                <div key={index} className={`ai-message ${msg.sender}`}>
+                  <div className="ai-message-sender">
+                    {msg.sender === 'user' ? 'Sobrevivente' : 'ECHO-9'}
+                  </div>
+                  <div style={{ whiteSpace: 'pre-wrap' }}>{msg.text}</div>
+                  
+                  {msg.sender === 'ai' && (
+                    <div className="ai-actions-bar">
+                      <button 
+                        onClick={() => handleAppendToNote(msg.text)}
+                        className="ai-action-btn"
+                        title="Adicionar esta resposta ao final do bloco de notas"
+                      >
+                        <Plus size={10} />
+                        <span>Incrementar</span>
+                      </button>
+                      <button 
+                        onClick={() => handleReplaceNote(msg.text)}
+                        className="ai-action-btn"
+                        title="Substituir o conteúdo do bloco de notas por esta resposta"
+                      >
+                        <Trash2 size={10} />
+                        <span>Substituir</span>
+                      </button>
+                      <button 
+                        onClick={() => {
+                          const cleanText = msg.text
+                            .replace(/\[PROTOCOLO DE SIMULAÇÃO ATIVO - SEM CONEXÃO GEMINI\]\n\n/g, '')
+                            .replace(/\[EMERGÊNCIA: SISTEMA DA BASE OFFLINE. EXECUTANDO RESPOSTA SIMULADA DE PROTOCOLO\]\n\n/g, '');
+                          navigator.clipboard.writeText(cleanText);
+                        }}
+                        className="ai-action-btn"
+                        title="Copiar para a área de transferência"
+                      >
+                        <Copy size={10} />
+                        <span>Copiar</span>
+                      </button>
+                    </div>
+                  )}
+                  
+                  <div className="ai-message-time">
+                    {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                </div>
+              ))
+            )}
+            <div ref={chatEndRef} />
+          </div>
+
+          {/* Quick Actions Panel */}
+          <div className="ai-quick-actions-container">
+            <div className="ai-quick-actions-title">Ações Rápidas</div>
+            <div className="ai-quick-actions">
+              <button 
+                onClick={() => handleSendAiMessage('Expandir e detalhar minhas anotações atuais.')}
+                className="ai-chip"
+                disabled={isAiLoading}
+              >
+                📝 Expandir
+              </button>
+              <button 
+                onClick={() => handleSendAiMessage('Revisar e melhorar a gramática e estilo da minha anotação atual.')}
+                className="ai-chip"
+                disabled={isAiLoading}
+              >
+                ✍️ Revisar
+              </button>
+              <button 
+                onClick={() => handleSendAiMessage('Com base nas minhas anotações atuais, gere 3 perguntas reflexivas de auto-avaliação.')}
+                className="ai-chip"
+                disabled={isAiLoading}
+              >
+                ❓ Perguntas
+              </button>
+              <button 
+                onClick={() => handleSendAiMessage(`Me dê sugestões e ideias para escrever com base no prompt de hoje: "${getPromptForDay(selectedDate)}"`)}
+                className="ai-chip"
+                disabled={isAiLoading}
+              >
+                💡 Ideias
+              </button>
+            </div>
+          </div>
+
+          {/* Chat Form */}
+          <form 
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSendAiMessage();
+            }} 
+            className="ai-input-form"
+          >
+            <input 
+              type="text" 
+              placeholder="Pergunte algo ao terminal..."
+              value={aiInput}
+              onChange={(e) => setAiInput(e.target.value)}
+              className="ai-input"
+              disabled={isAiLoading}
+            />
+            <button 
+              type="submit" 
+              className="ai-send-btn"
+              disabled={isAiLoading || !aiInput.trim()}
+            >
+              {isAiLoading ? <Loader2 size={14} className="spin" /> : <Send size={14} />}
+            </button>
+          </form>
+        </div>
+      )}
     </div>
   );
 }
