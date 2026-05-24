@@ -2178,4 +2178,73 @@ button {
   }
 }
 
+/* --- LOW DARKNESS MODE --- */
+.low-darkness-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  border: 1px solid var(--border-medium);
+  border-radius: 4px;
+  padding: 0.35rem 0.75rem;
+  cursor: pointer;
+  background: none;
+  transition: var(--transition-smooth);
+}
+
+.low-darkness-toggle:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: #fff;
+  color: #fff;
+  animation: elementJitter 0.15s infinite;
+}
+
+.low-darkness-toggle.active {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-color: #fff;
+}
+
+.low-darkness-toggle.active svg {
+  color: #f59e0b;
+}
+
+/* Apply adjustments when body has .low-darkness class */
+body.low-darkness::before {
+  opacity: 0.03 !important; /* Dim the CRT scanlines */
+}
+
+body.low-darkness::after {
+  background: radial-gradient(circle, transparent 65%, rgba(0, 0, 0, 0.4) 100%) !important; /* Lighter vignette shadow */
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.6) inset !important;
+}
+
+body.low-darkness {
+  background-color: #0b0b0d !important;
+}
+
+body.low-darkness .main-content {
+  background: radial-gradient(circle at 50% 50%, #111116 0%, #060608 100%) !important; /* Brighter screen */
+}
+
+body.low-darkness .notes-sidebar-card,
+body.low-darkness .editor-card,
+body.low-darkness .ai-panel,
+body.low-darkness .player-card,
+body.low-darkness .stats-card,
+body.low-darkness .sidebar {
+  background: #0f0f13 !important; /* More contrast / lighter card backgrounds */
+  border-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+body.low-darkness .editor-textarea {
+  background: #0b0b0e !important;
+}
+
+body.low-darkness .daily-prompt-box {
+  background: rgba(255, 255, 255, 0.03) !important;
+}
+
 

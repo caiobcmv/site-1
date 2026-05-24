@@ -135,6 +135,26 @@ export default function AnotacoesTab() {
   const [showAiSettings, setShowAiSettings] = useState(false);
   const chatEndRef = useRef(null);
 
+  // Check if server has API Key configured
+  const [serverHasApiKey, setServerHasApiKey] = useState(false);
+
+  useEffect(() => {
+    if (isAuthorized) {
+      const checkAiStatus = async () => {
+        try {
+          const response = await fetch(`${API_URL}/api/ai/status`);
+          if (response.ok) {
+            const data = await response.json();
+            setServerHasApiKey(data.hasApiKey);
+          }
+        } catch (err) {
+          console.error('Erro ao verificar status da IA:', err);
+        }
+      };
+      checkAiStatus();
+    }
+  }, [isAuthorized]);
+
   // Auto scroll chat to bottom when new messages arrive
   useEffect(() => {
     if (chatEndRef.current) {
@@ -912,8 +932,8 @@ export default function AnotacoesTab() {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <div className="ai-status-indicator">
-                <span className={`ai-status-dot ${aiApiKey.trim() ? 'active' : 'offline'}`} />
-                <span>{aiApiKey.trim() ? 'ONLINE' : 'SIMULATION'}</span>
+                <span className={`ai-status-dot ${(aiApiKey.trim() || serverHasApiKey) ? 'active' : 'offline'}`} />
+                <span>{(aiApiKey.trim() || serverHasApiKey) ? 'ONLINE' : 'SIMULATION'}</span>
               </div>
               <button 
                 onClick={() => setShowAiSettings(!showAiSettings)}

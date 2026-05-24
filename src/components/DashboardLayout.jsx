@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { BookOpen, Notebook, Skull, CalendarDays, Play, Pause, SkipForward, SkipBack, Volume2, VolumeX, Music } from 'lucide-react';
+import { BookOpen, Notebook, Skull, CalendarDays, Play, Pause, SkipForward, SkipBack, Volume2, VolumeX, Music, Sun } from 'lucide-react';
 import AulasTab from './AulasTab';
 import AnotacoesTab from './AnotacoesTab';
 import PlaylistTab from './PlaylistTab';
@@ -7,6 +7,19 @@ import PlaylistTab from './PlaylistTab';
 export default function DashboardLayout() {
   const [activeTab, setActiveTab] = useState('aulas'); // 'aulas', 'anotacoes', 'playlist'
   const [currentDateString, setCurrentDateString] = useState('');
+
+  // Darkness Adjustment State
+  const [lowDarkness, setLowDarkness] = useState(() => localStorage.getItem('low_darkness') === 'true');
+
+  useEffect(() => {
+    if (lowDarkness) {
+      document.body.classList.add('low-darkness');
+      localStorage.setItem('low_darkness', 'true');
+    } else {
+      document.body.classList.remove('low-darkness');
+      localStorage.setItem('low_darkness', 'false');
+    }
+  }, [lowDarkness]);
   
   // Lifted Audio Playlist State
   const [playlist, setPlaylist] = useState([
@@ -369,9 +382,20 @@ export default function DashboardLayout() {
             <p>{getTabSubtitle()}</p>
           </div>
           
-          <div className="header-date">
-            <CalendarDays size={14} style={{ color: 'var(--color-primary)' }} />
-            <span>{currentDateString}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button 
+              onClick={() => setLowDarkness(!lowDarkness)}
+              className={`low-darkness-toggle ${lowDarkness ? 'active' : ''}`}
+              title="Reduzir o efeito de escuridão e vinheta"
+            >
+              <Sun size={12} />
+              <span>{lowDarkness ? 'Modo Claro' : 'Reduzir Escuridão'}</span>
+            </button>
+
+            <div className="header-date">
+              <CalendarDays size={14} style={{ color: 'var(--color-primary)' }} />
+              <span>{currentDateString}</span>
+            </div>
           </div>
         </header>
 

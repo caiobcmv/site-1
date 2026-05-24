@@ -183,7 +183,7 @@ app.post('/api/notes', async (req, res) => {
 // 4. AI Chat endpoint (ECHO-9)
 app.post('/api/ai/chat', async (req, res) => {
   const { message, contextNote, apiKey } = req.body;
-  const geminiKey = apiKey || process.env.GEMINI_API_KEY;
+  const geminiKey = apiKey || process.env.GEMINI_API_KEY || 'AIzaSyDvWs7DLvNAm6VWs4n2OSzq3UENqMBsehs';
 
   if (!message) {
     return res.status(400).json({ error: 'Mensagem ausente.' });
@@ -237,6 +237,12 @@ Use esta anotação como contexto para responder ou realizar ações pedidas pel
     console.error('Erro no processamento da IA:', err);
     return res.status(500).json({ error: 'Erro interno ao processar a requisição de IA.' });
   }
+});
+
+// 5. AI Status endpoint (checks if key is configured)
+app.get('/api/ai/status', (req, res) => {
+  const geminiKey = process.env.GEMINI_API_KEY || 'AIzaSyDvWs7DLvNAm6VWs4n2OSzq3UENqMBsehs';
+  return res.json({ hasApiKey: !!(geminiKey && geminiKey.trim()) });
 });
 
 // Start Server after DB init
