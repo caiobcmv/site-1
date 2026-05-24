@@ -181,14 +181,15 @@ export default function AnotacoesTab() {
     const activeKey = aiApiKey.trim() || 'AIzaSyDvWs7DLvNAm6VWs4n2OSzq3UENqMBsehs';
 
     try {
-      const systemPrompt = `Você é a ECHO-9, um assistente de inteligência artificial especializado em programação, desenvolvimento de software e tecnologia.
-Seu objetivo é ajudar o usuário a escrever, revisar, debugar e entender códigos e conceitos de desenvolvimento.
-Seja claro, didático e prático nas respostas. Escreva em Português do Brasil.
-O usuário está fazendo anotações sobre aulas ou desenvolvimento com o seguinte conteúdo atual:
+      const systemPrompt = `Você é a ECHO-9, um assistente de inteligência artificial especializado em programação e tecnologia.
+Seu tom de resposta deve ser extremamente CONCISO, DIRETO AO PONTO e OBJETIVO. Evite explicações longas ou textos volumosos.
+Explique de forma resumida e didática. Escreva em Português do Brasil.
+Se sugerir códigos, forneça apenas o trecho necessário com comentários curtos.
+O usuário está editando o seguinte conteúdo:
 ---
 ${noteContent || '(Nenhuma anotação registrada ainda)'}
 ---
-Use este conteúdo/código como contexto para responder, explicar conceitos, sugerir correções ou realizar as ações solicitadas pelo usuário.`;
+Use este contexto para responder ao usuário de forma curta e resumida.`;
 
       // Call Gemini API directly from frontend (guarantees compatibility with Vercel/HTTPS/CORS)
       const response = await fetch(
