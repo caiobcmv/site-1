@@ -1,6 +1,30 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
+
+// Load local .env file if it exists (Node 20- native compatibility fallback)
+try {
+  const envPath = path.resolve(__dirname, '.env');
+  if (fs.existsSync(envPath)) {
+    const envContent = fs.readFileSync(envPath, 'utf8');
+    envContent.split(/\r?\n/).forEach(line => {
+      const trimmedLine = line.trim();
+      if (trimmedLine && !trimmedLine.startsWith('#')) {
+        const index = trimmedLine.indexOf('=');
+        if (index > 0) {
+          const key = trimmedLine.substring(0, index).trim();
+          const value = trimmedLine.substring(index + 1).trim();
+          if (key && value && !process.env[key]) {
+            process.env[key] = value;
+          }
+        }
+      }
+    });
+  }
+} catch (e) {
+  console.warn('Erro ao carregar arquivo .env local:', e.message);
+}
 const { open } = require('sqlite');
 const sqlite3 = require('sqlite3');
 
