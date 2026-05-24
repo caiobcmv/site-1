@@ -144,6 +144,10 @@ export default function DashboardLayout() {
   // Handle active track change
   useEffect(() => {
     if (audioRef.current) {
+      if (activeTrack?.isSpotify) {
+        audioRef.current.pause();
+        return;
+      }
       audioRef.current.src = activeTrack.url;
       audioRef.current.load();
       if (isPlaying) {
@@ -197,9 +201,13 @@ export default function DashboardLayout() {
       setIsPlaying(false);
     } else {
       setupVisualizer();
-      audioRef.current.play()
-        .then(() => setIsPlaying(true))
-        .catch(err => console.log(err));
+      if (activeTrack?.isSpotify) {
+        setIsPlaying(true);
+      } else {
+        audioRef.current.play()
+          .then(() => setIsPlaying(true))
+          .catch(err => console.log(err));
+      }
     }
   };
 
