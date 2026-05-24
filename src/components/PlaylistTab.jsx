@@ -364,46 +364,217 @@ export default function PlaylistTab({ audioState }) {
   const handleDemoConnect = () => {
     setIsSpotifyConnected(true);
     setSpotifyUser({
-      name: 'Caio (Demo Spotify)',
-      image: null,
-      id: 'demo_user'
+      name: 'caio barreto (Playlist: Novo)',
+      image: 'https://i.scdn.co/image/ab6775700000ee851bc7248e404730de1e9b05a3',
+      id: 'caiobarretovalle'
     });
 
     const demoTracks = [
       {
-        id: 'spotify-demo1',
-        title: 'After Hours',
-        artist: 'The Weeknd',
-        url: '/rotina.mp3', // Fallback to local files for playing
+        id: 'spotify-7trj9vNyMfcw77KtLxzo8M-0',
+        title: 'Sempre Volta',
+        artist: 'Nick, lilgiela33',
+        url: '/rotina.mp3',
         duration: 'Spotify Sync',
-        spotifyUrl: 'https://open.spotify.com/track/20hJ2wfBh6si4zHXI5tB58',
+        spotifyUrl: 'https://open.spotify.com/track/7trj9vNyMfcw77KtLxzo8M',
         isSpotify: true
       },
       {
-        id: 'spotify-demo2',
-        title: 'Sweater Weather',
-        artist: 'The Neighbourhood',
+        id: 'spotify-21t1GPQTSTRLpQ1soSZSNb-1',
+        title: 'P.F.A.',
+        artist: 'Myd',
         url: '/vemevai.wav',
         duration: 'Spotify Sync',
-        spotifyUrl: 'https://open.spotify.com/track/2TpxZ7JUBn3uw46aR7qd6V',
+        spotifyUrl: 'https://open.spotify.com/track/21t1GPQTSTRLpQ1soSZSNb',
         isSpotify: true
       },
       {
-        id: 'spotify-demo3',
-        title: 'Starboy',
-        artist: 'The Weeknd, Daft Punk',
+        id: 'spotify-1nZpe0B9lb4EJrWq8JK2Xp-2',
+        title: 'Minha Droga',
+        artist: 'zTokyo',
         url: '/c4.wav',
         duration: 'Spotify Sync',
-        spotifyUrl: 'https://open.spotify.com/track/7MXVkk9YM5d2v2Sg0B5t2S',
+        spotifyUrl: 'https://open.spotify.com/track/1nZpe0B9lb4EJrWq8JK2Xp',
         isSpotify: true
       },
       {
-        id: 'spotify-demo4',
-        title: 'Lofi Coding Session',
-        artist: 'Chillhop Music',
+        id: 'spotify-1W6xna821g67vahHm6tP0x-3',
+        title: 'Não Foda Minha Semana',
+        artist: 'zTokyo, Lil Chuv',
         url: '/pills.wav',
         duration: 'Spotify Sync',
-        spotifyUrl: 'https://open.spotify.com',
+        spotifyUrl: 'https://open.spotify.com/track/1W6xna821g67vahHm6tP0x',
+        isSpotify: true
+      },
+      {
+        id: 'spotify-13zIMw63T7fsRisy8TxYto-4',
+        title: 'Por Favor Se Vá',
+        artist: 'lilgiela33',
+        url: '/rotina.mp3',
+        duration: 'Spotify Sync',
+        spotifyUrl: 'https://open.spotify.com/track/13zIMw63T7fsRisy8TxYto',
+        isSpotify: true
+      },
+      {
+        id: 'spotify-0GHiPdmhMv6SHAwMF65Gk2-5',
+        title: 'Que Merda!!!',
+        artist: 'lilgiela33, zTokyo',
+        url: '/vemevai.wav',
+        duration: 'Spotify Sync',
+        spotifyUrl: 'https://open.spotify.com/track/0GHiPdmhMv6SHAwMF65Gk2',
+        isSpotify: true
+      },
+      {
+        id: 'spotify-07p8s4hndVIeecLIZRxRwR-6',
+        title: 'Peep, Cobain',
+        artist: 'lilgiela33',
+        url: '/c4.wav',
+        duration: 'Spotify Sync',
+        spotifyUrl: 'https://open.spotify.com/track/07p8s4hndVIeecLIZRxRwR',
+        isSpotify: true
+      },
+      {
+        id: 'spotify-1NtFTUkIrux7FbXOj5gt9F-7',
+        title: 'Garoto Do Mal',
+        artist: 'lilgiela33',
+        url: '/pills.wav',
+        duration: 'Spotify Sync',
+        spotifyUrl: 'https://open.spotify.com/track/1NtFTUkIrux7FbXOj5gt9F',
+        isSpotify: true
+      },
+      {
+        id: 'spotify-5Pkj6F3UN5ZIXeWpsV6Ngy-8',
+        title: 'Chorando Mais...',
+        artist: 'lilgiela33',
+        url: '/rotina.mp3',
+        duration: 'Spotify Sync',
+        spotifyUrl: 'https://open.spotify.com/track/5Pkj6F3UN5ZIXeWpsV6Ngy',
+        isSpotify: true
+      },
+      {
+        id: 'spotify-5NITKynujGpYbvIn3R7OqH-9',
+        title: 'Go Go',
+        artist: 'giela061, massacrey',
+        url: '/vemevai.wav',
+        duration: 'Spotify Sync',
+        spotifyUrl: 'https://open.spotify.com/track/5NITKynujGpYbvIn3R7OqH',
+        isSpotify: true
+      },
+      {
+        id: 'spotify-3gZbT75j9LTGNVhr5eGdsD-10',
+        title: 'No Fundo Cê Nem Liga',
+        artist: 'DROPO',
+        url: '/c4.wav',
+        duration: 'Spotify Sync',
+        spotifyUrl: 'https://open.spotify.com/track/3gZbT75j9LTGNVhr5eGdsD',
+        isSpotify: true
+      },
+      {
+        id: 'spotify-6IPGbolQwYYBd5ecZKmbwY-11',
+        title: 'Tô "Diferente"',
+        artist: 'lilgiela33',
+        url: '/pills.wav',
+        duration: 'Spotify Sync',
+        spotifyUrl: 'https://open.spotify.com/track/6IPGbolQwYYBd5ecZKmbwY',
+        isSpotify: true
+      },
+      {
+        id: 'spotify-2YlDr4BwuzFshb7BHKSk3j-12',
+        title: 'Eu N Sinto Falta de Ngm',
+        artist: 'Myd',
+        url: '/rotina.mp3',
+        duration: 'Spotify Sync',
+        spotifyUrl: 'https://open.spotify.com/track/2YlDr4BwuzFshb7BHKSk3j',
+        isSpotify: true
+      },
+      {
+        id: 'spotify-6u6ZyQppG0KUhoUZOGOFBV-13',
+        title: 'Prefiro a Morte',
+        artist: 'giela061, Sadzinnx',
+        url: '/vemevai.wav',
+        duration: 'Spotify Sync',
+        spotifyUrl: 'https://open.spotify.com/track/6u6ZyQppG0KUhoUZOGOFBV',
+        isSpotify: true
+      },
+      {
+        id: 'spotify-6pfsmxb6NRP4XNTZZ9s4Xe-14',
+        title: 'Cade Seu Pai? - Remastered',
+        artist: 'lilberto33',
+        url: '/c4.wav',
+        duration: 'Spotify Sync',
+        spotifyUrl: 'https://open.spotify.com/track/6pfsmxb6NRP4XNTZZ9s4Xe',
+        isSpotify: true
+      },
+      {
+        id: 'spotify-1aJVvkLB5i6cptjdtH9TyR-15',
+        title: 'FARMA',
+        artist: 'DROPO, STONED SUN',
+        url: '/pills.wav',
+        duration: 'Spotify Sync',
+        spotifyUrl: 'https://open.spotify.com/track/1aJVvkLB5i6cptjdtH9TyR',
+        isSpotify: true
+      },
+      {
+        id: 'spotify-3mIz14S0awRRB6XyWaLu2m-16',
+        title: 'Fundo do poço',
+        artist: 'YOUNG JP 111',
+        url: '/rotina.mp3',
+        duration: 'Spotify Sync',
+        spotifyUrl: 'https://open.spotify.com/track/3mIz14S0awRRB6XyWaLu2m',
+        isSpotify: true
+      },
+      {
+        id: 'spotify-36phzDplFcXThr5BezlJc4-17',
+        title: 'Fumando Gás',
+        artist: 'DROPO, zTokyo',
+        url: '/vemevai.wav',
+        duration: 'Spotify Sync',
+        spotifyUrl: 'https://open.spotify.com/track/36phzDplFcXThr5BezlJc4',
+        isSpotify: true
+      },
+      {
+        id: 'spotify-0iQp0xNUANPYoOaPyBUObv-18',
+        title: 'Câmera Lenta',
+        artist: 'lilgiela33',
+        url: '/c4.wav',
+        duration: 'Spotify Sync',
+        spotifyUrl: 'https://open.spotify.com/track/0iQp0xNUANPYoOaPyBUObv',
+        isSpotify: true
+      },
+      {
+        id: 'spotify-5XsDj33LACB2bgq3jNaiFy-19',
+        title: 'Buracos de Cobras',
+        artist: 'Nick',
+        url: '/pills.wav',
+        duration: 'Spotify Sync',
+        spotifyUrl: 'https://open.spotify.com/track/5XsDj33LACB2bgq3jNaiFy',
+        isSpotify: true
+      },
+      {
+        id: 'spotify-4TIUZoHUpm3I2RqkaAtRq2-20',
+        title: 'Aquafina',
+        artist: 'zTokyo',
+        url: '/rotina.mp3',
+        duration: 'Spotify Sync',
+        spotifyUrl: 'https://open.spotify.com/track/4TIUZoHUpm3I2RqkaAtRq2',
+        isSpotify: true
+      },
+      {
+        id: 'spotify-1YqSWCBYFRSGC4Rfi2rfge-21',
+        title: 'Você (Only One)',
+        artist: 'Nick, DROPO',
+        url: '/vemevai.wav',
+        duration: 'Spotify Sync',
+        spotifyUrl: 'https://open.spotify.com/track/1YqSWCBYFRSGC4Rfi2rfge',
+        isSpotify: true
+      },
+      {
+        id: 'spotify-3P8ZUpoOx1nJAxscDsc8O4-22',
+        title: 'Mesmo de Sempre',
+        artist: 'Poison6, Nosred',
+        url: '/c4.wav',
+        duration: 'Spotify Sync',
+        spotifyUrl: 'https://open.spotify.com/track/3P8ZUpoOx1nJAxscDsc8O4',
         isSpotify: true
       }
     ];
@@ -781,9 +952,9 @@ export default function PlaylistTab({ audioState }) {
               marginBottom: '1.5rem',
               textAlign: 'left'
             }}>
-              <h4 style={{ margin: '0 0 4px', fontSize: '0.85rem', color: '#1db954' }}>Modo de Demonstração Rápido (Recomendado)</h4>
+              <h4 style={{ margin: '0 0 4px', fontSize: '0.85rem', color: '#1db954' }}>Carregar Playlist de Caio (Recomendado)</h4>
               <p style={{ margin: '0 0 1rem', fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
-                Vincule uma conta simulada instantaneamente com uma seleção de faixas famosas para ver o funcionamento completo, sem precisar configurar chaves de desenvolvedor.
+                Vincule instantaneamente a conta simulada de <strong>caio barreto</strong> carregando a playlist <strong>"Novo"</strong> (contendo 23 faixas de Lil Giela, zTokyo e outros) para ver o funcionamento completo.
               </p>
               <button 
                 onClick={handleDemoConnect}
@@ -798,7 +969,7 @@ export default function PlaylistTab({ audioState }) {
                   padding: '0.6rem'
                 }}
               >
-                Conectar Conta Demo
+                Vincular Playlist "Novo" (Demo)
               </button>
             </div>
 
