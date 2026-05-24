@@ -11,29 +11,81 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-let db;
+let db; // SQLite database reference
+let pool; // PostgreSQL pool reference
+
+// Helper to query all rows (works with both SQLite and PostgreSQL)
+async function dbAll(sql, params = []) {
+  if (pool) {
+    let pgSql = sql;
+    let index = 1;
+    while (pgSql.includes('?')) {
+      pgSql = pgSql.replace('?', `$${index++}`);
+    }
+    const res = await pool.query(pgSql, params);
+    return res.rows;
+  } else {
+    return await db.all(sql, params);
+  }
+}
+
+// Helper to run a write/delete query (works with both SQLite and PostgreSQL)
+async function dbRun(sql, params = []) {
+  if (pool) {
+    let pgSql = sql;
+    let index = 1;
+    while (pgSql.includes('?')) {
+      pgSql = pgSql.replace('?', `$${index++}`);
+    }
+    await pool.query(pgSql, params);
+  } else {
+    await db.run(sql, params);
+  }
+}
 
 // Initialize Database
 async function initDb() {
-  const dbPath = path.resolve(__dirname, 'database.sqlite');
-  db = await open({
-    filename: dbPath,
-    driver: sqlite3.Database
-  });
+  if (process.env.DATABASE_URL) {
+    const { Pool } = require('pg');
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: {
+        rejectUnauthorized: false
+      }
+    });
 
-  // Create table if not exists
-  await db.exec(`
-    CREATE TABLE IF NOT EXISTS notes (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      passcode TEXT NOT NULL,
-      date_key TEXT NOT NULL,
-      content TEXT NOT NULL,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE(passcode, date_key)
-    )
-  `);
-  
-  console.log(`Database loaded: ${dbPath}`);
+    // Create table if not exists in PostgreSQL
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS notes (
+        id SERIAL PRIMARY KEY,
+        passcode VARCHAR(255) NOT NULL,
+        date_key VARCHAR(50) NOT NULL,
+        content TEXT NOT NULL,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(passcode, date_key)
+      )
+    `);
+    console.log('Production database loaded: PostgreSQL');
+  } else {
+    const dbPath = path.resolve(__dirname, 'database.sqlite');
+    db = await open({
+      filename: dbPath,
+      driver: sqlite3.Database
+    });
+
+    // Create table if not exists in SQLite
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS notes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        passcode TEXT NOT NULL,
+        date_key TEXT NOT NULL,
+        content TEXT NOT NULL,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(passcode, date_key)
+      )
+    `);
+    console.log(`Local development database loaded: SQLite (${dbPath})`);
+  }
 }
 
 // Routes
@@ -57,7 +109,7 @@ app.get('/api/notes', async (req, res) => {
   }
 
   try {
-    const rows = await db.all('SELECT date_key, content FROM notes WHERE passcode = ?', [passcode.trim()]);
+    const rows = await dbAll('SELECT date_key, content FROM notes WHERE passcode = ?', [passcode.trim()]);
     // Format response as a key-value object: { "2026-05-24": "Anotação aqui..." }
     const notesMap = {};
     rows.forEach(row => {
@@ -84,11 +136,11 @@ app.post('/api/notes', async (req, res) => {
 
     if (cleanContent === '') {
       // If content is empty, delete the row
-      await db.run('DELETE FROM notes WHERE passcode = ? AND date_key = ?', [passcode.trim(), date_key]);
+      await dbRun('DELETE FROM notes WHERE passcode = ? AND date_key = ?', [passcode.trim(), date_key]);
       return res.json({ success: true, message: 'Anotação removida.' });
     } else {
       // Upsert
-      await db.run(`
+      await dbRun(`
         INSERT INTO notes (passcode, date_key, content, updated_at)
         VALUES (?, ?, ?, CURRENT_TIMESTAMP)
         ON CONFLICT(passcode, date_key) DO UPDATE SET
@@ -110,5 +162,5 @@ initDb().then(() => {
     console.log(`Backend API running on http://localhost:${PORT}`);
   });
 }).catch(err => {
-  console.error('Failed to initialize SQLite database', err);
+  console.error('Failed to initialize database', err);
 });
