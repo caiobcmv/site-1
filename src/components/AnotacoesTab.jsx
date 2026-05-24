@@ -12,7 +12,28 @@ const DAILY_PROMPTS = [
 ];
 
 // Configure API URL (can be overridden in production build)
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+// Uses dynamic hostname to allow accessing the server from other machines in the same network
+const API_URL = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3001`;
+
+// Local storage note structure helpers
+const getLocalNotes = (code) => {
+  if (!code) return {};
+  const local = localStorage.getItem(`local_notes_${code}`);
+  if (local) {
+    try {
+      return JSON.parse(local);
+    } catch (e) {
+      console.error('Erro ao ler notas locais:', e);
+      return {};
+    }
+  }
+  return {};
+};
+
+const saveLocalNotes = (code, notesObj) => {
+  if (!code) return;
+  localStorage.setItem(`local_notes_${code}`, JSON.stringify(notesObj));
+};
 
 export default function AnotacoesTab() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -26,7 +47,7 @@ export default function AnotacoesTab() {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [showPasscode, setShowPasscode] = useState(false);
   const [authError, setAuthError] = useState('');
-  const [allNotes, setAllNotes] = useState({}); // { "YYYY-MM-DD": "content" }
+  const [allNotes, setAllNotes] = useState({}); // { "YYYY-MM-DD": { content: string, synced: boolean } }
   const [isLoading, setIsLoading] = useState(false);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
 
@@ -42,11 +63,14 @@ export default function AnotacoesTab() {
 
   const selectedKey = getLocalDateKey(selectedDate);
 
-  // 1. Check local session for passcode on mount
+// 1. Check local session for passcode on mount
   useEffect(() => {
     const savedPasscode = localStorage.getItem('notes_passcode');
     if (savedPasscode) {
       setPasscode(savedPasscode);
+      // Load local notes immediately to avoid blank display during fetch
+      const localNotes = getLocalNotes(savedPasscode);
+      setAllNotes(localNotes);
       setIsAuthorized(true);
     }
   }, []);
@@ -61,19 +85,112 @@ export default function AnotacoesTab() {
   // 3. Handle active note content updates on selectedKey change
   useEffect(() => {
     if (isAuthorized) {
-      const activeNote = allNotes[selectedKey] || '';
+      const activeNote = allNotes[selectedKey]?.content || '';
       setNoteContent(activeNote);
-      setSaveStatus('saved');
+      // If the active note in state is not synced, we display 'error' to indicate it is offline
+      setSaveStatus(allNotes[selectedKey] && !allNotes[selectedKey].synced ? 'error' : 'saved');
     }
   }, [selectedKey, allNotes, isAuthorized]);
+
+  // Background Sync function
+  const syncPendingNotes = async (currentPasscode, notesState) => {
+    if (!currentPasscode) return;
+    const pendingKeys = Object.keys(notesState).filter(key => notesState[key] && !notesState[key].synced);
+    if (pendingKeys.length === 0) return;
+
+    for (const key of pendingKeys) {
+      const contentVal = notesState[key]?.content || '';
+      try {
+        const response = await fetch(`${API_URL}/api/notes`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            passcode: currentPasscode,
+            date_key: key,
+            content: contentVal
+          })
+        });
+
+        if (response.ok) {
+          setAllNotes(prev => {
+            const next = { ...prev };
+            if (next[key]) {
+              next[key] = { ...next[key], synced: true };
+            }
+            saveLocalNotes(currentPasscode, next);
+            return next;
+          });
+        }
+      } catch (err) {
+        console.error(`Falha ao sincronizar a nota ${key}:`, err);
+      }
+    }
+  };
+
+  // Periodic sync of pending notes
+  useEffect(() => {
+    if (isAuthorized && passcode) {
+      const interval = setInterval(() => {
+        syncPendingNotes(passcode, allNotes);
+      }, 10000); // Check and sync every 10s
+      return () => clearInterval(interval);
+    }
+  }, [isAuthorized, passcode, allNotes]);
+
+  // Sync on online event
+  useEffect(() => {
+    const handleOnline = () => {
+      if (isAuthorized && passcode) {
+        syncPendingNotes(passcode, allNotes);
+      }
+    };
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, [isAuthorized, passcode, allNotes]);
 
   const loadCloudNotes = async () => {
     setIsLoading(true);
     try {
       const response = await fetch(`${API_URL}/api/notes?passcode=${encodeURIComponent(passcode)}`);
       if (response.ok) {
-        const data = await response.json();
-        setAllNotes(data);
+        const cloudData = await response.json(); // { "YYYY-MM-DD": "content" }
+        
+        // Merge cloud data with local storage data
+        setAllNotes(prev => {
+          const local = getLocalNotes(passcode);
+          const merged = { ...local };
+
+          // 1. Incorporate cloud notes
+          Object.keys(cloudData).forEach(key => {
+            const cloudContent = cloudData[key] || '';
+            const localItem = local[key];
+            
+            // If we have local unsynced edits, keep the local version so we don't lose data
+            if (localItem && !localItem.synced) {
+              // Keep local version (background sync will upload it)
+            } else {
+              if (cloudContent.trim() === '') {
+                delete merged[key];
+              } else {
+                merged[key] = { content: cloudContent, synced: true };
+              }
+            }
+          });
+
+          // 2. Remove items that were deleted in cloud if they were already marked synced locally
+          Object.keys(local).forEach(key => {
+            if (local[key]?.synced && cloudData[key] === undefined) {
+              delete merged[key];
+            }
+          });
+
+          saveLocalNotes(passcode, merged);
+          
+          // Trigger sync in background in case there are pending notes
+          setTimeout(() => syncPendingNotes(passcode, merged), 100);
+
+          return merged;
+        });
       } else {
         console.error('Falha ao sincronizar as anotações do servidor.');
       }
@@ -106,13 +223,29 @@ export default function AnotacoesTab() {
         const cleanCode = passcodeInput.trim();
         localStorage.setItem('notes_passcode', cleanCode);
         setPasscode(cleanCode);
+        
+        // Load local notes immediately
+        const initialLocalNotes = getLocalNotes(cleanCode);
+        setAllNotes(initialLocalNotes);
+        
         setIsAuthorized(true);
       } else {
         const errData = await response.json();
         setAuthError(errData.error || 'Código incorreto ou inválido.');
       }
     } catch (err) {
-      setAuthError('Sem conexão com o servidor. Verifique se o backend está rodando.');
+      // Offline fallback: if the passcode matches what was saved in localStorage, we can authenticate offline!
+      const savedPasscode = localStorage.getItem('notes_passcode');
+      const cleanCode = passcodeInput.trim();
+      
+      if (savedPasscode && savedPasscode === cleanCode) {
+        setPasscode(cleanCode);
+        const initialLocalNotes = getLocalNotes(cleanCode);
+        setAllNotes(initialLocalNotes);
+        setIsAuthorized(true);
+      } else {
+        setAuthError('Sem conexão com o servidor. Verifique se o backend está rodando.');
+      }
     } finally {
       setIsAuthenticating(false);
     }
@@ -131,6 +264,19 @@ export default function AnotacoesTab() {
   // Save note helper
   const saveNote = async (key, contentVal) => {
     setSaveStatus('saving');
+
+    // 1. Update local state and localStorage immediately with synced: false
+    setAllNotes(prev => {
+      const next = { ...prev };
+      if (contentVal.trim() === '') {
+        delete next[key];
+      } else {
+        next[key] = { content: contentVal, synced: false };
+      }
+      saveLocalNotes(passcode, next);
+      return next;
+    });
+
     try {
       const response = await fetch(`${API_URL}/api/notes`, {
         method: 'POST',
@@ -143,14 +289,15 @@ export default function AnotacoesTab() {
       });
 
       if (response.ok) {
-        // Update local mapping in memory
+        // Update local mapping to mark as synced: true
         setAllNotes(prev => {
           const next = { ...prev };
           if (contentVal.trim() === '') {
             delete next[key];
           } else {
-            next[key] = contentVal;
+            next[key] = { content: contentVal, synced: true };
           }
+          saveLocalNotes(passcode, next);
           return next;
         });
         setSaveStatus('saved');
@@ -159,7 +306,7 @@ export default function AnotacoesTab() {
       }
     } catch (err) {
       console.error('Falha de conexão ao salvar na nuvem:', err);
-      setSaveStatus('error');
+      setSaveStatus('error'); // Safe, already stored in localStorage
     }
   };
 
@@ -254,8 +401,8 @@ export default function AnotacoesTab() {
     return DAILY_PROMPTS[day % DAILY_PROMPTS.length];
   };
 
-  // Days with saved notes
-  const daysWithNotes = Object.keys(allNotes);
+  // Days with saved notes (excluding empty ones)
+  const daysWithNotes = Object.keys(allNotes).filter(key => allNotes[key]?.content?.trim() !== '');
 
   const wordCount = noteContent.trim() ? noteContent.trim().split(/\s+/).length : 0;
   const charCount = noteContent.length;
@@ -422,8 +569,9 @@ export default function AnotacoesTab() {
             [...daysWithNotes].sort().reverse().map(dateStr => {
               const [y, m, d] = dateStr.split('-');
               const dateObj = new Date(y, m - 1, d);
-              const preview = allNotes[dateStr] || '';
+              const preview = allNotes[dateStr]?.content || '';
               const isActive = selectedKey === dateStr;
+              const isSynced = allNotes[dateStr]?.synced;
 
               return (
                 <button
@@ -436,8 +584,24 @@ export default function AnotacoesTab() {
                     }
                     setSelectedDate(dateObj);
                   }}
+                  style={{ position: 'relative' }}
                 >
-                  <span className="history-item-date">{d}/{m}</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    {!isSynced && (
+                      <span 
+                        title="Salvo localmente (offline)" 
+                        style={{ 
+                          width: '6px', 
+                          height: '6px', 
+                          borderRadius: '50%', 
+                          background: 'var(--color-blue)', 
+                          display: 'inline-block',
+                          boxShadow: '0 0 4px var(--color-blue)'
+                        }} 
+                      />
+                    )}
+                    <span className="history-item-date">{d}/{m}</span>
+                  </span>
                   <span className="history-item-preview">{preview || 'Sem conteúdo'}</span>
                 </button>
               );
@@ -480,7 +644,7 @@ export default function AnotacoesTab() {
               <span style={{ textDecoration: saveStatus === 'saving' ? 'none' : 'underline' }}>
                 {saveStatus === 'saved' && 'Sincronizado na Nuvem'}
                 {saveStatus === 'saving' && 'Salvando na Nuvem...'}
-                {saveStatus === 'error' && 'Erro ao Salvar (Clique para tentar)'}
+                {saveStatus === 'error' && 'Salvo Localmente (Offline - Clique para Sincronizar)'}
               </span>
             </button>
             
