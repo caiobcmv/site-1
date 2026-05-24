@@ -628,8 +628,8 @@ export default function PlaylistTab({ audioState }) {
             <span className="track-subtitle">{activeTrack?.artist}</span>
           </div>
 
-          {activeTrack?.isSpotify ? (
-            <div style={{ marginTop: '1.5rem', width: '100%', borderRadius: '12px', overflow: 'hidden' }}>
+          {activeTrack?.isSpotify && (
+            <div style={{ marginTop: '1.5rem', width: '100%', borderRadius: '12px', overflow: 'hidden', marginBottom: '1.5rem' }}>
               <iframe
                 src={`https://open.spotify.com/embed/track/${getSpotifyTrackId(activeTrack)}?utm_source=generator&theme=0`}
                 width="100%"
@@ -640,63 +640,61 @@ export default function PlaylistTab({ audioState }) {
                 style={{ border: 'none' }}
               ></iframe>
             </div>
-          ) : (
-            <>
-              {/* Scrubber */}
-              <div className="scrubber-container">
-                <div className="scrubber-time-info">
-                  <span>{formatTime(currentTime)}</span>
-                  <span>{formatTime(duration || 0)}</span>
-                </div>
-                <div className="scrubber-bar" onClick={handleScrubberChange}>
-                  <div 
-                    className="scrubber-fill" 
-                    style={{ width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%`, backgroundColor: 'var(--color-primary)' }}
-                  ></div>
-                  <div 
-                    className="scrubber-handle" 
-                    style={{ left: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }}
-                  ></div>
-                </div>
-              </div>
-
-              {/* Playback Controls */}
-              <div className="player-controls">
-                <button className="btn-ctrl" onClick={handlePrev} title="Música Anterior">
-                  <SkipBack size={18} />
-                </button>
-                
-                <button 
-                  className="btn-ctrl play-pause" 
-                  onClick={handlePlayPause}
-                  title={isPlaying ? "Pausar" : "Tocar"}
-                  style={{ backgroundColor: '#fff', color: '#000' }}
-                >
-                  {isPlaying ? <Pause size={24} fill="black" /> : <Play size={24} fill="black" style={{ marginLeft: '4px' }} />}
-                </button>
-                
-                <button className="btn-ctrl" onClick={handleNext} title="Próxima Música">
-                  <SkipForward size={18} />
-                </button>
-              </div>
-
-              {/* Volume */}
-              <div className="volume-controls">
-                <button style={{ color: 'inherit', background: 'none', border: 'none', cursor: 'pointer' }} onClick={toggleMute} title={isMuted ? "Tirar do Mudo" : "Mutar"}>
-                  {isMuted || volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
-                </button>
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.01"
-                  value={isMuted ? 0 : volume}
-                  onChange={handleVolumeChange}
-                  className="volume-slider"
-                />
-              </div>
-            </>
           )}
+
+          {/* Scrubber */}
+          <div className="scrubber-container">
+            <div className="scrubber-time-info">
+              <span>{formatTime(currentTime)}</span>
+              <span>{formatTime(duration || 0)}</span>
+            </div>
+            <div className="scrubber-bar" onClick={handleScrubberChange}>
+              <div 
+                className="scrubber-fill" 
+                style={{ width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%`, backgroundColor: 'var(--color-primary)' }}
+              ></div>
+              <div 
+                className="scrubber-handle" 
+                style={{ left: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }}
+              ></div>
+            </div>
+          </div>
+
+          {/* Playback Controls */}
+          <div className="player-controls">
+            <button className="btn-ctrl" onClick={handlePrev} title="Música Anterior">
+              <SkipBack size={18} />
+            </button>
+            
+            <button 
+              className="btn-ctrl play-pause" 
+              onClick={handlePlayPause}
+              title={isPlaying ? "Pausar" : "Tocar"}
+              style={{ backgroundColor: '#fff', color: '#000' }}
+            >
+              {isPlaying ? <Pause size={24} fill="black" /> : <Play size={24} fill="black" style={{ marginLeft: '4px' }} />}
+            </button>
+            
+            <button className="btn-ctrl" onClick={handleNext} title="Próxima Música">
+              <SkipForward size={18} />
+            </button>
+          </div>
+
+          {/* Volume */}
+          <div className="volume-controls">
+            <button style={{ color: 'inherit', background: 'none', border: 'none', cursor: 'pointer' }} onClick={toggleMute} title={isMuted ? "Tirar do Mudo" : "Mutar"}>
+              {isMuted || volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
+            </button>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={isMuted ? 0 : volume}
+              onChange={handleVolumeChange}
+              className="volume-slider"
+            />
+          </div>
 
           {/* Spotify Direct Link */}
           {activeTrack?.spotifyUrl && (
