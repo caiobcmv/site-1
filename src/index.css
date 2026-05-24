@@ -1659,3 +1659,28 @@ button {
   box-shadow: 0 0 12px rgba(255, 255, 255, 0.4);
   animation: elementJitter 0.15s infinite;
 }
+
+/* Spotify Integration Styles */
+.spotify-connect-btn:hover {
+  background-color: #1ed760 !important;
+  transform: scale(1.04);
+  box-shadow: 0 0 12px rgba(29, 185, 84, 0.4);
+}
+
+.spotify-connect-btn:active {
+  transform: scale(1);
+}
+
+.spotify-refresh-btn:hover {
+  color: #1db954 !important;
+}
+
+.spotify-link-out:hover {
+  text-decoration: underline !important;
+  color: #1ed760 !important;
+}
+
+.spin {
+  animation: spinSlow 2s linear infinite;
+}
+

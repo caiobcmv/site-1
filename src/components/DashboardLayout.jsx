@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { BookOpen, Notebook, Skull, CalendarDays, Play, Pause, SkipForward, SkipBack, Volume2, VolumeX } from 'lucide-react';
+import { BookOpen, Notebook, Skull, CalendarDays, Play, Pause, SkipForward, SkipBack, Volume2, VolumeX, Music } from 'lucide-react';
 import AulasTab from './AulasTab';
 import AnotacoesTab from './AnotacoesTab';
-import MorteTab from './MorteTab';
+import PlaylistTab from './PlaylistTab';
 
 export default function DashboardLayout() {
-  const [activeTab, setActiveTab] = useState('aulas'); // 'aulas', 'anotacoes', 'morte'
+  const [activeTab, setActiveTab] = useState('aulas'); // 'aulas', 'anotacoes', 'playlist'
   const [currentDateString, setCurrentDateString] = useState('');
   
   // Lifted Audio Playlist State
@@ -75,6 +75,71 @@ export default function DashboardLayout() {
     const dateStr = today.toLocaleDateString('pt-BR', options);
     setCurrentDateString(dateStr.charAt(0).toUpperCase() + dateStr.slice(1));
   }, []);
+
+  // Parse Spotify login redirect (either hash or search code query param)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    if (code) {
+      const clientId = localStorage.getItem('spotify_client_id');
+      const codeVerifier = localStorage.getItem('spotify_code_verifier');
+      if (clientId && codeVerifier) {
+        exchangeSpotifyCodeForToken(code, clientId, codeVerifier);
+      }
+    }
+
+    const hash = window.location.hash;
+    if (hash) {
+      const params = new URLSearchParams(hash.substring(1));
+      const accessToken = params.get('access_token');
+      if (accessToken) {
+        localStorage.setItem('spotify_access_token', accessToken);
+        const expiresIn = params.get('expires_in');
+        if (expiresIn) {
+          const expireTime = Date.now() + parseInt(expiresIn) * 1000;
+          localStorage.setItem('spotify_token_expires', expireTime.toString());
+        }
+        window.history.pushState("", document.title, window.location.pathname);
+        setActiveTab('playlist');
+      }
+    }
+  }, []);
+
+  const exchangeSpotifyCodeForToken = async (code, clientId, codeVerifier) => {
+    try {
+      const response = await fetch('https://accounts.spotify.com/api/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          client_id: clientId,
+          grant_type: 'authorization_code',
+          code: code,
+          redirect_uri: window.location.origin + '/',
+          code_verifier: codeVerifier,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        localStorage.setItem('spotify_access_token', data.access_token);
+        if (data.expires_in) {
+          const expireTime = Date.now() + parseInt(data.expires_in) * 1000;
+          localStorage.setItem('spotify_token_expires', expireTime.toString());
+        }
+        localStorage.removeItem('spotify_code_verifier');
+        window.history.pushState("", document.title, window.location.pathname);
+        setActiveTab('playlist');
+        // Notify playlist tab to load Spotify tracks
+        window.dispatchEvent(new Event('spotify_connected'));
+      } else {
+        console.error('Failed to exchange Spotify authorization code', await response.json());
+      }
+    } catch (err) {
+      console.error('Error during Spotify token exchange', err);
+    }
+  };
 
   // Handle active track change
   useEffect(() => {
@@ -211,7 +276,7 @@ export default function DashboardLayout() {
     switch (activeTab) {
       case 'aulas': return 'Dashboard de Aulas';
       case 'anotacoes': return 'Anotações Diárias';
-      case 'morte': return 'Morte - Playlist Sombria';
+      case 'playlist': return 'Playlist Personalizada';
       default: return 'Painel Principal';
     }
   };
@@ -220,7 +285,7 @@ export default function DashboardLayout() {
     switch (activeTab) {
       case 'aulas': return 'Gerencie suas aulas assistidas e acompanhe seu progresso de aprendizado.';
       case 'anotacoes': return 'Registre suas descobertas, pensamentos e planos diários.';
-      case 'morte': return 'A sintonização de áudio recomendada para explorações de alto risco.';
+      case 'playlist': return 'Gerencie suas músicas preferidas e sincronize com seu Spotify.';
       default: return '';
     }
   };
@@ -263,11 +328,11 @@ export default function DashboardLayout() {
           </button>
 
           <button 
-            className={`menu-item ${activeTab === 'morte' ? 'active' : ''}`}
-            onClick={() => setActiveTab('morte')}
+            className={`menu-item ${activeTab === 'playlist' ? 'active' : ''}`}
+            onClick={() => setActiveTab('playlist')}
           >
-            <Skull />
-            <span>Morte</span>
+            <Music />
+            <span>Playlist</span>
           </button>
         </nav>
 
@@ -298,14 +363,20 @@ export default function DashboardLayout() {
         </header>
 
         {/* Dynamic Tab Body */}
-        <div className={`tab-container ${activeTab !== 'morte' ? 'has-player' : ''}`}>
-          {activeTab === 'aulas' && <AulasTab />}
-          {activeTab === 'anotacoes' && <AnotacoesTab />}
-          {activeTab === 'morte' && <MorteTab audioState={audioState} />}
+        <div className={`tab-container ${activeTab !== 'playlist' ? 'has-player' : ''}`}>
+          <div style={{ display: activeTab === 'aulas' ? 'block' : 'none' }}>
+            <AulasTab />
+          </div>
+          <div style={{ display: activeTab === 'anotacoes' ? 'block' : 'none' }}>
+            <AnotacoesTab />
+          </div>
+          <div style={{ display: activeTab === 'playlist' ? 'block' : 'none' }}>
+            <PlaylistTab audioState={audioState} />
+          </div>
         </div>
 
         {/* Bottom Persistent Mini-Player Bar */}
-        {activeTab !== 'morte' && (
+        {activeTab !== 'playlist' && (
           <div className="mini-player-bar">
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: '180px', maxWidth: '260px' }}>
               <Skull 

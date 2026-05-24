@@ -128,46 +128,62 @@ export default function AnotacoesTab() {
   };
 
   // Autosave notes to the cloud database
+  // Save note helper
+  const saveNote = async (key, contentVal) => {
+    setSaveStatus('saving');
+    try {
+      const response = await fetch(`${API_URL}/api/notes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          passcode,
+          date_key: key,
+          content: contentVal
+        })
+      });
+
+      if (response.ok) {
+        // Update local mapping in memory
+        setAllNotes(prev => {
+          const next = { ...prev };
+          if (contentVal.trim() === '') {
+            delete next[key];
+          } else {
+            next[key] = contentVal;
+          }
+          return next;
+        });
+        setSaveStatus('saved');
+      } else {
+        setSaveStatus('error');
+      }
+    } catch (err) {
+      console.error('Falha de conexão ao salvar na nuvem:', err);
+      setSaveStatus('error');
+    }
+  };
+
+  // Autosave notes to the cloud database
   const handleNoteChange = (e) => {
     const val = e.target.value;
+    const targetKey = selectedKey; // Capture current key immediately
     setNoteContent(val);
     setSaveStatus('saving');
 
     // Debounce save (wait 800ms after last stroke)
     if (timerRef.current) clearTimeout(timerRef.current);
     
-    timerRef.current = setTimeout(async () => {
-      try {
-        const response = await fetch(`${API_URL}/api/notes`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            passcode,
-            date_key: selectedKey,
-            content: val
-          })
-        });
-
-        if (response.ok) {
-          // Update local mapping in memory
-          setAllNotes(prev => {
-            const next = { ...prev };
-            if (val.trim() === '') {
-              delete next[selectedKey];
-            } else {
-              next[selectedKey] = val;
-            }
-            return next;
-          });
-          setSaveStatus('saved');
-        } else {
-          setSaveStatus('error');
-        }
-      } catch (err) {
-        console.error('Falha de conexão ao salvar na nuvem:', err);
-        setSaveStatus('error');
-      }
+    timerRef.current = setTimeout(() => {
+      saveNote(targetKey, val);
     }, 800);
+  };
+
+  // Trigger immediate save when user leaves the textarea
+  const handleBlur = () => {
+    if (saveStatus === 'saving') {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      saveNote(selectedKey, noteContent);
+    }
   };
 
   // Clean up timer on unmount
@@ -376,7 +392,13 @@ export default function AnotacoesTab() {
               <button
                 key={idx}
                 className={`calendar-cell ${cell.isCurrentMonth ? 'current-month' : ''} ${isSelected ? 'selected' : ''} ${hasNote ? 'has-note' : ''} ${isToday ? 'today' : ''}`}
-                onClick={() => setSelectedDate(cell.date)}
+                onClick={() => {
+                  if (saveStatus === 'saving') {
+                    if (timerRef.current) clearTimeout(timerRef.current);
+                    saveNote(selectedKey, noteContent);
+                  }
+                  setSelectedDate(cell.date);
+                }}
               >
                 {cell.dayNum}
               </button>
@@ -407,7 +429,13 @@ export default function AnotacoesTab() {
                 <button
                   key={dateStr}
                   className={`history-item ${isActive ? 'active' : ''}`}
-                  onClick={() => setSelectedDate(dateObj)}
+                  onClick={() => {
+                    if (saveStatus === 'saving') {
+                      if (timerRef.current) clearTimeout(timerRef.current);
+                      saveNote(selectedKey, noteContent);
+                    }
+                    setSelectedDate(dateObj);
+                  }}
                 >
                   <span className="history-item-date">{d}/{m}</span>
                   <span className="history-item-preview">{preview || 'Sem conteúdo'}</span>
@@ -426,14 +454,35 @@ export default function AnotacoesTab() {
             <p>{formatLongDate(selectedDate)}</p>
           </div>
           <div className="editor-actions">
-            <div className={`save-indicator ${saveStatus === 'saved' ? 'saved' : ''}`} style={{ marginRight: '8px' }}>
+            <button 
+              onClick={() => {
+                if (timerRef.current) clearTimeout(timerRef.current);
+                saveNote(selectedKey, noteContent);
+              }}
+              className={`save-indicator ${saveStatus === 'saved' ? 'saved' : ''}`} 
+              style={{ 
+                marginRight: '8px',
+                cursor: 'pointer',
+                background: 'none',
+                border: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '4px 8px',
+                borderRadius: '4px',
+                color: 'inherit',
+                fontSize: 'inherit'
+              }}
+              title="Salvar Agora"
+              disabled={saveStatus === 'saving'}
+            >
               <Save size={14} />
-              <span>
+              <span style={{ textDecoration: saveStatus === 'saving' ? 'none' : 'underline' }}>
                 {saveStatus === 'saved' && 'Sincronizado na Nuvem'}
                 {saveStatus === 'saving' && 'Salvando na Nuvem...'}
-                {saveStatus === 'error' && 'Erro ao Salvar!'}
+                {saveStatus === 'error' && 'Erro ao Salvar (Clique para tentar)'}
               </span>
-            </div>
+            </button>
             
             <button 
               onClick={handleLogout}
@@ -479,6 +528,7 @@ export default function AnotacoesTab() {
             placeholder="Comece a digitar sua anotação diária aqui... (Seu progresso será salvo automaticamente na nuvem)"
             value={noteContent}
             onChange={handleNoteChange}
+            onBlur={handleBlur}
             disabled={isLoading}
           />
         </div>
