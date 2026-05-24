@@ -26,6 +26,16 @@ const base64urlencode = (buffer) => {
     .replace(/=+$/, '');
 };
 
+const getSpotifyTrackId = (track) => {
+  if (!track || !track.isSpotify) return '';
+  if (track.id === 'spotify-demo1') return '20hJ2wfBh6si4zHXI5tB58';
+  if (track.id === 'spotify-demo2') return '2TpxZ7JUBn3uw46aR7qd6V';
+  if (track.id === 'spotify-demo3') return '7MXVkk9YM5d2v2Sg0B5t2S';
+  if (track.id === 'spotify-demo4') return '598VNs5m1Bh5lu20g7tHi3';
+  const parts = track.id.replace('spotify-', '').split('-');
+  return parts[0];
+};
+
 export default function PlaylistTab({ audioState }) {
   const {
     playlist,
@@ -67,46 +77,68 @@ export default function PlaylistTab({ audioState }) {
     
     const canvasCtx = canvas.getContext('2d');
     const analyser = analyserRef.current;
-    if (!canvasCtx || !analyser) return;
     
-    const bufferLength = analyser.frequencyBinCount;
+    const bufferLength = analyser ? analyser.frequencyBinCount : 128;
     const dataArray = new Uint8Array(bufferLength);
     
     const draw = () => {
+      if (!canvas || !canvasCtx) return;
+      
       if (!isPlaying) {
-        if (canvas) {
-          canvasCtx.fillStyle = '#0c0d12';
-          canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
-          canvasCtx.lineWidth = 2;
-          canvasCtx.strokeStyle = 'rgba(29, 185, 84, 0.2)'; // Spotify green hint
-          canvasCtx.beginPath();
-          canvasCtx.moveTo(0, canvas.height / 2);
-          canvasCtx.lineTo(canvas.width, canvas.height / 2);
-          canvasCtx.stroke();
-        }
+        canvasCtx.fillStyle = '#0c0d12';
+        canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+        canvasCtx.lineWidth = 2;
+        canvasCtx.strokeStyle = 'rgba(29, 185, 84, 0.2)'; // Spotify green hint
+        canvasCtx.beginPath();
+        canvasCtx.moveTo(0, canvas.height / 2);
+        canvasCtx.lineTo(canvas.width, canvas.height / 2);
+        canvasCtx.stroke();
         animationRef.current = requestAnimationFrame(draw);
         return;
       }
       
       animationRef.current = requestAnimationFrame(draw);
-      analyser.getByteFrequencyData(dataArray);
       
-      canvasCtx.fillStyle = '#0c0d12';
-      canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      const barWidth = (canvas.width / bufferLength) * 1.5;
-      let barHeight;
-      let x = 0;
-      
-      for (let i = 0; i < bufferLength; i++) {
-        barHeight = dataArray[i] / 2;
+      if (activeTrack?.isSpotify) {
+        // Generate simulated, organic lofi green waves when playing a Spotify track
+        canvasCtx.fillStyle = '#0c0d12';
+        canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
         
-        // Dynamic green-gray styling for visualizer
-        const greenValue = Math.min(255, 120 + barHeight * 1.2);
-        canvasCtx.fillStyle = `rgb(29, ${greenValue}, 84)`;
-        canvasCtx.fillRect(x, canvas.height - barHeight, barWidth - 2, barHeight);
+        const time = Date.now() * 0.005;
+        const barWidth = (canvas.width / bufferLength) * 1.5;
+        let x = 0;
         
-        x += barWidth;
+        for (let i = 0; i < bufferLength; i++) {
+          const wave1 = Math.sin(i * 0.15 + time) * 15;
+          const wave2 = Math.cos(i * 0.08 - time * 0.4) * 12;
+          const noise = Math.sin(i * 0.5 + time * 2) * 5;
+          const simulatedHeight = Math.max(4, 25 + wave1 + wave2 + noise + (i < 8 ? 12 : 0));
+          
+          const greenValue = Math.min(255, 130 + simulatedHeight * 1.6);
+          canvasCtx.fillStyle = `rgb(29, ${greenValue}, 84)`;
+          canvasCtx.fillRect(x, canvas.height - simulatedHeight, barWidth - 2, simulatedHeight);
+          
+          x += barWidth;
+        }
+        return;
+      }
+      
+      if (analyser) {
+        analyser.getByteFrequencyData(dataArray);
+        canvasCtx.fillStyle = '#0c0d12';
+        canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        const barWidth = (canvas.width / bufferLength) * 1.5;
+        let barHeight;
+        let x = 0;
+        
+        for (let i = 0; i < bufferLength; i++) {
+          barHeight = dataArray[i] / 2;
+          const greenValue = Math.min(255, 120 + barHeight * 1.2);
+          canvasCtx.fillStyle = `rgb(29, ${greenValue}, 84)`;
+          canvasCtx.fillRect(x, canvas.height - barHeight, barWidth - 2, barHeight);
+          x += barWidth;
+        }
       }
     };
     
@@ -116,7 +148,7 @@ export default function PlaylistTab({ audioState }) {
 
   // Visualizer trigger
   useEffect(() => {
-    if (isPlaying && analyserRef.current) {
+    if (isPlaying) {
       drawVisualizer();
     } else {
       const canvas = canvasRef.current;
@@ -425,59 +457,75 @@ export default function PlaylistTab({ audioState }) {
             <span className="track-subtitle">{activeTrack?.artist}</span>
           </div>
 
-          {/* Scrubber */}
-          <div className="scrubber-container">
-            <div className="scrubber-time-info">
-              <span>{formatTime(currentTime)}</span>
-              <span>{formatTime(duration || 0)}</span>
+          {activeTrack?.isSpotify ? (
+            <div style={{ marginTop: '1.5rem', width: '100%', borderRadius: '12px', overflow: 'hidden' }}>
+              <iframe
+                src={`https://open.spotify.com/embed/track/${getSpotifyTrackId(activeTrack)}?utm_source=generator&theme=0`}
+                width="100%"
+                height="152"
+                frameBorder="0"
+                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                loading="lazy"
+                style={{ border: 'none' }}
+              ></iframe>
             </div>
-            <div className="scrubber-bar" onClick={handleScrubberChange}>
-              <div 
-                className="scrubber-fill" 
-                style={{ width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%`, backgroundColor: activeTrack?.isSpotify ? '#1db954' : 'var(--color-primary)' }}
-              ></div>
-              <div 
-                className="scrubber-handle" 
-                style={{ left: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }}
-              ></div>
-            </div>
-          </div>
+          ) : (
+            <>
+              {/* Scrubber */}
+              <div className="scrubber-container">
+                <div className="scrubber-time-info">
+                  <span>{formatTime(currentTime)}</span>
+                  <span>{formatTime(duration || 0)}</span>
+                </div>
+                <div className="scrubber-bar" onClick={handleScrubberChange}>
+                  <div 
+                    className="scrubber-fill" 
+                    style={{ width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%`, backgroundColor: 'var(--color-primary)' }}
+                  ></div>
+                  <div 
+                    className="scrubber-handle" 
+                    style={{ left: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }}
+                  ></div>
+                </div>
+              </div>
 
-          {/* Playback Controls */}
-          <div className="player-controls">
-            <button className="btn-ctrl" onClick={handlePrev} title="Música Anterior">
-              <SkipBack size={18} />
-            </button>
-            
-            <button 
-              className="btn-ctrl play-pause" 
-              onClick={handlePlayPause}
-              title={isPlaying ? "Pausar" : "Tocar"}
-              style={{ backgroundColor: activeTrack?.isSpotify ? '#1db954' : '#fff', color: '#000' }}
-            >
-              {isPlaying ? <Pause size={24} fill="black" /> : <Play size={24} fill="black" style={{ marginLeft: '4px' }} />}
-            </button>
-            
-            <button className="btn-ctrl" onClick={handleNext} title="Próxima Música">
-              <SkipForward size={18} />
-            </button>
-          </div>
+              {/* Playback Controls */}
+              <div className="player-controls">
+                <button className="btn-ctrl" onClick={handlePrev} title="Música Anterior">
+                  <SkipBack size={18} />
+                </button>
+                
+                <button 
+                  className="btn-ctrl play-pause" 
+                  onClick={handlePlayPause}
+                  title={isPlaying ? "Pausar" : "Tocar"}
+                  style={{ backgroundColor: '#fff', color: '#000' }}
+                >
+                  {isPlaying ? <Pause size={24} fill="black" /> : <Play size={24} fill="black" style={{ marginLeft: '4px' }} />}
+                </button>
+                
+                <button className="btn-ctrl" onClick={handleNext} title="Próxima Música">
+                  <SkipForward size={18} />
+                </button>
+              </div>
 
-          {/* Volume */}
-          <div className="volume-controls">
-            <button style={{ color: 'inherit', background: 'none', border: 'none', cursor: 'pointer' }} onClick={toggleMute} title={isMuted ? "Tirar do Mudo" : "Mutar"}>
-              {isMuted || volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
-            </button>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.01"
-              value={isMuted ? 0 : volume}
-              onChange={handleVolumeChange}
-              className="volume-slider"
-            />
-          </div>
+              {/* Volume */}
+              <div className="volume-controls">
+                <button style={{ color: 'inherit', background: 'none', border: 'none', cursor: 'pointer' }} onClick={toggleMute} title={isMuted ? "Tirar do Mudo" : "Mutar"}>
+                  {isMuted || volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                </button>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={isMuted ? 0 : volume}
+                  onChange={handleVolumeChange}
+                  className="volume-slider"
+                />
+              </div>
+            </>
+          )}
 
           {/* Spotify Direct Link */}
           {activeTrack?.spotifyUrl && (
