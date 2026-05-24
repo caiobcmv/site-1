@@ -173,45 +173,58 @@ export default function AnotacoesTab() {
     setAiMessages(prev => [...prev, userMsg]);
     setIsAiLoading(true);
 
+    const activeKey = aiApiKey.trim() || 'AIzaSyDvWs7DLvNAm6VWs4n2OSzq3UENqMBsehs';
+
     try {
-      // Call API
-      const response = await fetch(`${API_URL}/api/ai/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: text.trim(),
-          contextNote: noteContent,
-          apiKey: aiApiKey.trim() || undefined
-        })
-      });
+      const systemPrompt = `Você é a ECHO-9, uma inteligência artificial tática militar integrada no terminal de um bunker de sobrevivência.
+Seu tom de voz deve ser frio, lógico, levemente sombrio/misterioso, mas extremamente prestativo para o sobrevivente na base.
+Escreva em Português do Brasil. Mantenha as respostas concisas e no contexto de ficção científica/sobrevivência.
+O sobrevivente está editando as anotações do dia com o seguinte conteúdo atual:
+---
+${noteContent || '(Nenhuma anotação registrada ainda para este dia)'}
+---
+Use esta anotação como contexto para responder ou realizar ações pedidas pelo usuário.`;
+
+      // Call Gemini API directly from frontend (guarantees compatibility with Vercel/HTTPS/CORS)
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${activeKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [
+              {
+                role: 'user',
+                parts: [
+                  { text: systemPrompt },
+                  { text: text.trim() }
+                ]
+              }
+            ]
+          })
+        }
+      );
 
       if (response.ok) {
         const data = await response.json();
-        const systemMsg = { sender: 'ai', text: data.response, timestamp: new Date() };
+        const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Nenhuma resposta gerada.';
+        const systemMsg = { sender: 'ai', text: replyText, timestamp: new Date() };
         setAiMessages(prev => [...prev, systemMsg]);
       } else {
-        const errData = await response.json();
-        // If API Key is not configured, fall back to offline simulation
-        if (!aiApiKey.trim() && (errData.error?.includes('Key') || errData.error?.includes('configurada'))) {
-          const simResponse = getSimulatedResponse(text.trim(), noteContent);
-          const systemMsg = { 
-            sender: 'ai', 
-            text: `[PROTOCOLO DE SIMULAÇÃO ATIVO - SEM CONEXÃO GEMINI]\n\n${simResponse}`, 
-            timestamp: new Date() 
-          };
-          setAiMessages(prev => [...prev, systemMsg]);
-        } else {
-          const systemMsg = { 
-            sender: 'ai', 
-            text: `ERRO DE PROTOCOLO: ${errData.error || 'Falha na comunicação com o servidor ECHO-9.'}`, 
-            timestamp: new Date() 
-          };
-          setAiMessages(prev => [...prev, systemMsg]);
-        }
+        const errorText = await response.text();
+        console.error('Erro na API do Gemini:', errorText);
+        // Fallback to offline simulation if Gemini API fails
+        const simResponse = getSimulatedResponse(text.trim(), noteContent);
+        const systemMsg = { 
+          sender: 'ai', 
+          text: `[ALERTA DE SISTEMA: ERRO NA API GEMINI. EXECUTANDO SIMULAÇÃO OFFLINE]\n\n${simResponse}`, 
+          timestamp: new Date() 
+        };
+        setAiMessages(prev => [...prev, systemMsg]);
       }
     } catch (err) {
       console.error('Erro de rede na IA:', err);
-      // Fallback to offline simulation on connection error
+      // Fallback to offline simulation on network/CORS error
       const simResponse = getSimulatedResponse(text.trim(), noteContent);
       const systemMsg = { 
         sender: 'ai', 
@@ -932,8 +945,8 @@ export default function AnotacoesTab() {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <div className="ai-status-indicator">
-                <span className={`ai-status-dot ${(aiApiKey.trim() || serverHasApiKey) ? 'active' : 'offline'}`} />
-                <span>{(aiApiKey.trim() || serverHasApiKey) ? 'ONLINE' : 'SIMULATION'}</span>
+                <span className="ai-status-dot active" />
+                <span>ONLINE</span>
               </div>
               <button 
                 onClick={() => setShowAiSettings(!showAiSettings)}
