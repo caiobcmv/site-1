@@ -486,6 +486,77 @@ button {
   gap: 12px;
 }
 
+.github-footer {
+  justify-content: center;
+}
+
+.github-bubble-btn {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-medium);
+  color: var(--text-muted);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  transition: var(--transition-smooth);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.github-bubble-btn:hover {
+  background: #ffffff;
+  color: #000000;
+  border-color: #ffffff;
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.6);
+  transform: translateY(-3px);
+  animation: elementJitter 0.2s infinite;
+}
+
+/* Balloon Tooltip (Balão de Diálogo) */
+.github-bubble-btn .balloon-tooltip {
+  position: absolute;
+  bottom: 60px; /* position above the button */
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: #ffffff;
+  color: #000000;
+  padding: 8px 12px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+  border-radius: 6px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5), 0 0 10px rgba(255, 255, 255, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 101;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Speech balloon triangle pointing down */
+.github-bubble-btn .balloon-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 6px;
+  border-style: solid;
+  border-color: #ffffff transparent transparent transparent;
+}
+
+.github-bubble-btn:hover .balloon-tooltip {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+
 .user-avatar {
   width: 32px;
   height: 32px;
