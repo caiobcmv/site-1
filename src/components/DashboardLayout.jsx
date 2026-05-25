@@ -326,8 +326,8 @@ export default function DashboardLayout() {
       {/* Sidebar Navigation */}
       <aside className="sidebar">
         <div className="sidebar-header">
-          <div className="sidebar-logo-icon">
-            <Skull size={20} />
+          <div className="sidebar-logo-icon" style={{ overflow: 'hidden' }}>
+            <img src="/logo-cat.png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
           <h2 className="sidebar-title haunted-flicker" style={{ fontSize: '0.85rem' }}>Inconsistência <span>Mental</span></h2>
         </div>
